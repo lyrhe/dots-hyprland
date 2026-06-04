@@ -21,15 +21,14 @@ MouseArea {
         id: batteryProgress
         anchors.centerIn: parent
         vertical: true
-        valueBarWidth: 20
-        valueBarHeight: 36
+        valueBarWidth: 21
+        valueBarHeight: 40
         value: percentage
-        // value: 1
         highlightColor: (isLow && !isCharging) ? Appearance.m3colors.m3error : Appearance.colors.colOnSecondaryContainer
 
         font {
-            pixelSize: 13
-            weight: Font.DemiBold
+            pixelSize: text.length > 2 ? 11 : 13
+            weight: text.length > 2 ? Font.Medium : Font.DemiBold
         }
 
         textMask: Item {
@@ -37,29 +36,20 @@ MouseArea {
             width: batteryProgress.valueBarWidth
             height: batteryProgress.valueBarHeight
 
-            Column {
+            ColumnLayout {
                 anchors.centerIn: parent
-                spacing: -4
+                spacing: 0
 
                 MaterialSymbol {
                     id: boltIcon
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    Layout.alignment: Qt.AlignHCenter
                     fill: 1
-                    text: {
-                        if (batteryProgress.value == 1) {
-                            return "check";
-                        } else if (root.isCharging) {
-                            return "bolt";
-                        } else {
-                            return Icons.getBatteryIcon(Battery.percentage * 100);
-                        }
-                    }
+                    text: isCharging ? "bolt" : "battery_android_full"
                     iconSize: Appearance.font.pixelSize.normal
                     animateChange: true
                 }
                 StyledText {
-                    visible: text.length <= 2
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    Layout.alignment: Qt.AlignHCenter
                     font: batteryProgress.font
                     text: batteryProgress.text
                 }

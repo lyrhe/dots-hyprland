@@ -90,7 +90,6 @@ Rectangle {
                     anchors.centerIn: parent
                     font.pixelSize: Appearance.font.pixelSize.smaller
                     color: Appearance.colors.colOnLayer2
-                    // text: `Page ${root.responseData.page}`
                     text: Translation.tr("Page %1").arg(root.responseData.page)
                 }
             }
@@ -229,8 +228,8 @@ Rectangle {
                         imageData: modelData
                         rowHeight: imageRow.rowHeight
                         imageRadius: imageRow.modelData.images.length == 1 ? 50 : Appearance.rounding.normal
-                        // Download manually to reduce redundant requests or make sure downloading works
-                        manualDownload: ["danbooru", "waifu.im", "t.alcy.cc", "konachan"].includes(root.responseData.provider)
+                        provider: root.responseData.provider
+                        manualDownload: ["danbooru", "waifu.im", "t.alcy.cc", "gelbooru"].includes(root.responseData.provider)
                         previewDownloadPath: root.previewDownloadPath
                         downloadPath: root.downloadPath
                         nsfwPath: root.nsfwPath

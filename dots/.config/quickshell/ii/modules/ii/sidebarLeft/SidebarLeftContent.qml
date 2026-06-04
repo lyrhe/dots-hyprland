@@ -9,6 +9,7 @@ import Qt.labs.synchronizer
 
 Item {
     id: root
+    clip: true
     required property var scopeRoot
     property int sidebarPadding: 10
     anchors.fill: parent
@@ -16,10 +17,25 @@ Item {
     property bool translatorEnabled: Config.options.sidebar.translator.enable
     property bool animeEnabled: Config.options.policies.weeb !== 0
     property bool animeCloset: Config.options.policies.weeb === 2
+
+    // Count of visible tabs — computed without referencing tabButtonList to
+    // avoid a circular binding. The two custom tabs (playlists, capture) are
+    // always present, hence the +2.
+    readonly property int visibleTabCount:
+        (root.aiChatEnabled ? 1 : 0) +
+        (root.translatorEnabled ? 1 : 0) +
+        ((root.animeEnabled && !root.animeCloset) ? 1 : 0) + 2
+
+    // When there are more than 3 tabs the Toolbar overflows the sidebar width.
+    // Dropping text labels makes every button narrow enough to fit.
+    readonly property bool iconOnlyTabs: visibleTabCount > 3
+
     property var tabButtonList: [
-        ...(root.aiChatEnabled ? [{"icon": "neurology", "name": Translation.tr("Intelligence")}] : []),
-        ...(root.translatorEnabled ? [{"icon": "translate", "name": Translation.tr("Translator")}] : []),
-        ...((root.animeEnabled && !root.animeCloset) ? [{"icon": "bookmark_heart", "name": Translation.tr("Anime")}] : [])
+        ...(root.aiChatEnabled ? [{"icon": "neurology", "name": iconOnlyTabs ? "" : Translation.tr("Intelligence")}] : []),
+        ...(root.translatorEnabled ? [{"icon": "translate", "name": iconOnlyTabs ? "" : Translation.tr("Translator")}] : []),
+        ...((root.animeEnabled && !root.animeCloset) ? [{"icon": "bookmark_heart", "name": iconOnlyTabs ? "" : Translation.tr("Anime")}] : []),
+        {"icon": "queue_music", "name": ""},
+        {"icon": "edit_note", "name": ""}
     ]
     property int tabCount: swipeView.count
 
@@ -88,6 +104,8 @@ Item {
                     ...(root.translatorEnabled ? [translator.createObject()] : []),
                     ...((root.tabButtonList.length === 0 || (!root.aiChatEnabled && !root.translatorEnabled && root.animeCloset)) ? [placeholder.createObject()] : []),
                     ...(root.animeEnabled ? [anime.createObject()] : []),
+                    ...[mpdPlaylists.createObject()],
+                    ...[quickCapture.createObject()]
                 ]
             }
         }
@@ -103,6 +121,14 @@ Item {
         Component {
             id: anime
             Anime {}
+        }
+        Component {
+            id: mpdPlaylists
+            MpdPlaylists {}
+        }
+        Component {
+            id: quickCapture
+            QuickCapture {}
         }
         Component {
             id: placeholder

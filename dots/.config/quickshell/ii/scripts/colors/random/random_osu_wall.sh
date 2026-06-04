@@ -27,18 +27,35 @@ CACHE_DIR="$XDG_CACHE_HOME/quickshell"
 STATE_DIR="$XDG_STATE_HOME/quickshell"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-mkdir -p "$PICTURES_DIR/Wallpapers"
+mkdir -p "$1"
 
 response=$(curl "https://osu.ppy.sh/api/v2/seasonal-backgrounds")
 images=$(echo "$response" | jq '.backgrounds | length' -r);
 randomIndex=$((RANDOM % images));
 link=$(echo "$response" | jq ".backgrounds[$randomIndex].url" -r)
 ext=$(echo "$link" | awk -F. '{print $NF}')
-downloadPath="$PICTURES_DIR/Wallpapers/random_wallpaper.$ext"
 illogicalImpulseConfigPath="$HOME/.config/illogical-impulse/config.json"
 currentWallpaperPath=$(jq -r '.background.wallpaperPath' $illogicalImpulseConfigPath)
-if [ "$downloadPath" == "$currentWallpaperPath" ]; then
-    downloadPath="$PICTURES_DIR/Wallpapers/random_wallpaper-1.$ext"
+downloadName="$(python3 -c "import urllib.parse, sys; print(urllib.parse.unquote(sys.argv[1]))" "$(basename $link)")"
+if [ "$#" -ge 2 ]; then
+    downloadName="$2.$ext"
+    if [ "${1%/}/$downloadName" == "$currentWallpaperPath" ]; then
+        downloadName="${2}-1.$ext"
+    fi
 fi
+downloadPath="${1%/}/$downloadName"
 curl "$link" -o "$downloadPath"
-"$SCRIPT_DIR/../switchwall.sh" --image "$downloadPath"
+
+SHELL_CONFIG_FILE="$HOME/.config/illogical-impulse/config.json"
+multiMonitorEnabled=$(jq -r '.background.multiMonitor.enable' "$SHELL_CONFIG_FILE" 2>/dev/null)
+
+if [ "$multiMonitorEnabled" == "true" ]; then
+    focusedMonitor=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true) | .name' 2>/dev/null)
+    if [ -n "$focusedMonitor" ]; then
+        "$SCRIPT_DIR/../switchwall.sh" --image "$downloadPath" --monitor "$focusedMonitor"
+    else
+        "$SCRIPT_DIR/../switchwall.sh" --image "$downloadPath"
+    fi
+else
+    "$SCRIPT_DIR/../switchwall.sh" --image "$downloadPath"
+fi

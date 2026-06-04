@@ -268,7 +268,7 @@ Item {
                 toggled: false
                 buttonIcon: "restart_alt"
                 onClicked: {
-                    Quickshell.execDetached(["hyprctl", "reload"])
+                    Hyprland.dispatch("reload");
                     Quickshell.reload(true);
                 }
                 StyledToolTip {

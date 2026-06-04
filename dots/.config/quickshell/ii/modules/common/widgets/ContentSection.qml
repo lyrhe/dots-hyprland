@@ -8,7 +8,7 @@ ColumnLayout {
     id: root
     property string title
     property string icon: ""
-    default property alias contentData: sectionContent.data
+    default property alias data: sectionContent.data
 
     Layout.fillWidth: true
     spacing: 6

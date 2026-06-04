@@ -27,17 +27,33 @@ CACHE_DIR="$XDG_CACHE_HOME/quickshell"
 STATE_DIR="$XDG_STATE_HOME/quickshell"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-mkdir -p "$PICTURES_DIR/Wallpapers"
+mkdir -p "$1"
 page=$((1 + RANDOM % 1000));
-illogicalImpulseConfigPath="$HOME/.config/illogical-impulse/config.json"
-userAgent=$(jq -r '.networking.userAgent // empty' "$illogicalImpulseConfigPath" 2>/dev/null)
-response=$(curl -A "$userAgent" "https://konachan.net/post.json?tags=rating%3Asafe&limit=1&page=$page")
+response=$(curl "https://konachan.net/post.json?tags=rating%3Asafe&limit=1&page=$page")
 link=$(echo "$response" | jq '.[0].file_url' -r);
 ext=$(echo "$link" | awk -F. '{print $NF}')
-downloadPath="$PICTURES_DIR/Wallpapers/random_wallpaper.$ext"
-currentWallpaperPath=$(jq -r '.background.wallpaperPath' "$illogicalImpulseConfigPath")
-if [ "$downloadPath" == "$currentWallpaperPath" ]; then
-    downloadPath="$PICTURES_DIR/Wallpapers/random_wallpaper-1.$ext"
+illogicalImpulseConfigPath="$HOME/.config/illogical-impulse/config.json"
+currentWallpaperPath=$(jq -r '.background.wallpaperPath' $illogicalImpulseConfigPath)
+downloadName="$(python3 -c "import urllib.parse, sys; print(urllib.parse.unquote(sys.argv[1]))" "$(basename $link)")"
+if [ "$#" -ge 2 ]; then
+    downloadName="$2.$ext"
+    if [ "${1%/}/$downloadName" == "$currentWallpaperPath" ]; then
+        downloadName="${2}-1.$ext"
+    fi
 fi
-curl -A "$userAgent" "$link" -o "$downloadPath"
-"$SCRIPT_DIR/../switchwall.sh" --image "$downloadPath"
+downloadPath="${1%/}/$downloadName"
+curl "$link" -o "$downloadPath"
+
+SHELL_CONFIG_FILE="$HOME/.config/illogical-impulse/config.json"
+multiMonitorEnabled=$(jq -r '.background.multiMonitor.enable' "$SHELL_CONFIG_FILE" 2>/dev/null)
+
+if [ "$multiMonitorEnabled" == "true" ]; then
+    focusedMonitor=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true) | .name' 2>/dev/null)
+    if [ -n "$focusedMonitor" ]; then
+        "$SCRIPT_DIR/../switchwall.sh" --image "$downloadPath" --monitor "$focusedMonitor"
+    else
+        "$SCRIPT_DIR/../switchwall.sh" --image "$downloadPath"
+    fi
+else
+    "$SCRIPT_DIR/../switchwall.sh" --image "$downloadPath"
+fi

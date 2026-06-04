@@ -6,37 +6,25 @@ import qs.modules.common.functions
 
 Process {
     id: root
-
+    
     signal done(string path, int width, int height);
     required property string filePath;
     required property string sourceUrl;
     property string downloadUserAgent: Config.options?.networking.userAgent ?? ""
-    
+    property string referer: ""
+
     function processFilePath() {
         return StringUtils.shellSingleQuoteEscape(FileUtils.trimFileProtocol(filePath));
     }
-
-    function processSourceUrl() {
-        return StringUtils.shellSingleQuoteEscape(sourceUrl);
-    }
-
-    function curlUserAgentArg() {
-        if (!downloadUserAgent) {
-            return "";
-        }
-        return ` -H 'User-Agent: ${StringUtils.shellSingleQuoteEscape(downloadUserAgent)}'`;
-    }
-
     running: true
     command: ["bash", "-c", 
-        `mkdir -p $(dirname '${processFilePath()}'); [ -f '${processFilePath()}' ] || curl -sSL '${processSourceUrl()}'${curlUserAgentArg()} -o '${processFilePath()}' && file '${processFilePath()}'`
+        `mkdir -p $(dirname '${processFilePath()}'); [ -f '${processFilePath()}' ] || curl -sSL ${referer.length > 0 ? `-e '${referer}'` : ""} '${sourceUrl}' -o '${processFilePath()}' && file '${processFilePath()}'`
     ]
     stdout: StdioCollector {
         id: imageSizeOutputCollector
         onStreamFinished: {
             const output = imageSizeOutputCollector.text.trim();
             const match = output.match(/(\d+)\s*x\s*(\d+)/);
-
             if (match) {
                 const width = Number(match[1]);
                 const height = Number(match[2]);
